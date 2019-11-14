@@ -58,7 +58,7 @@ app.use("/register", (req, res, next) => {
  */
 
 app.get("/", (req, res) => {
-    res.send("<h1>Hello Mike!</h1>");
+    res.send("<h1>API</h1>");
 });
 
 app.post("/login", (req, res) => {
