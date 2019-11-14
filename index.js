@@ -23,6 +23,11 @@ app.use(
     })
 );
 
+// Middleware de connection
+app.use("/login", (req, res, next) => {
+    if (filterEmailPassword(req, res)) next();
+});
+
 // Middleware d'inscription
 app.use("/register", (req, res, next) => {
     const data = req.body;
@@ -54,6 +59,42 @@ app.use("/register", (req, res, next) => {
 
 app.get("/", (req, res) => {
     res.send("<h1>Hello Mike!</h1>");
+});
+
+app.post("/login", (req, res) => {
+    const data = req.body;
+    connect.query(
+        "SELECT * FROM users WHERE email = ?", [data.email],
+        (error, results) => {
+            if (error) sendReturn(res);
+            else if (results.length == 0)
+                sendReturn(res, 418, {
+                    error: true,
+                    message: "Password/Email doesn't exist"
+                });
+            else {
+                //bcrypt.compare(data.password, results[0].password, (isOK) =>{})
+                // Comparaison du password via le hash de la BDD
+                bcrypt.compare(data.password, results[0].password).then(isOk => {
+                    if (isOk) getUsers(res, "where idusers = " + results[0].idusers);
+                    else {
+                        sendReturn(res, 418, {
+                            error: true,
+                            message: "Password/Email doesn't exist"
+                        });
+                    }
+                });
+            }
+        }
+    );
+});
+
+app.get("/user/:id", (req, res) => {
+    // Test id est envoyez
+    if (req.params.id === undefined) sendReturn(res);
+    // Test id est numérique
+    else if (req.params.id.match(/^[0-9]*$/gm) == null) sendReturn(res);
+    else getUsers(res, "where idusers = " + req.params.id);
 });
 
 app.post("/register", (req, res) => {
@@ -107,3 +148,101 @@ app.post("/register", (req, res) => {
         }
     );
 });
+
+app.delete("/user/:id", (req, res) => {
+    const id = req.params.id;
+    if (id === undefined) sendReturn(res);
+    else if (id.match(/^[0-9]*$/gm) == null) sendReturn(res);
+    else
+        connect.query(
+            "DELETE FROM `users` WHERE `users`.`idusers` = ?", [id],
+            (err, result) => {
+                // Suppression d'un user via id
+                if (err) sendReturn(res, 200, err);
+                sendReturn(res, 200, {
+                    error: false,
+                    message: "Users delete"
+                });
+            }
+        );
+});
+
+app.get("/users", (req, res) => getUsers(res));
+app.delete("/users", (req, res) =>
+    connect.query("TRUNCATE users", (err, result) => {
+        // Suppression de la totalité de la base de donnée
+        if (err) sendReturn(res, 200, err);
+        sendReturn(res, 200, {
+            error: false,
+            message: "All users delete"
+        });
+    })
+);
+
+/**
+ * Recuperation des utilisateurs
+ * @param {Response} res
+ * @param {String} where
+ * @param {Number} port
+ */
+const getUsers = (res, where = "", port = 200) =>
+    connect.query("SELECT * FROM users " + where, (error, results) => {
+        console.log("SELECT * FROM users " + where);
+        if (error) sendReturn(res, 413, error);
+        // Si erreur dans la requets
+        else if (results === undefined) sendReturn(res);
+        // Si le resultat n'existe pas
+        else {
+            if (port == 0) return results;
+            // Si la récuperation est bonne
+            results.map(item => {
+                // Array.map => Foreach()
+                delete item.idusers; // Suppression d'un elements
+                delete item.password;
+                return item; // Retour le nouvel element item => results[i] = item
+            });
+            sendReturn(res, port, {
+                error: false,
+                data: results
+            });
+        }
+    });
+
+/**
+ * Management of messages send to the Customer
+ * @param {Response} res
+ * @param {Number} status
+ * @param {Object} data
+ */
+const sendReturn = (
+    res,
+    status = 500,
+    data = {
+        error: true,
+        message: "Processing error"
+    }
+) => {
+    res.setHeader("Content-Type", "application/json"); // Typage de la data de retour
+    res.status(status).json(data);
+};
+
+const filterEmailPassword = (req, res) => {
+    const data = req.body;
+    let message = "La/Les donnée(s) ";
+    if (
+        data.email == undefined ||
+        data.email.match(
+            /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        ) == null
+    )
+        message += "email, ";
+    if (data.password == undefined || data.password.trim().length == 0)
+        message += "mot de passe, ";
+    if (message.length > 17) {
+        message =
+            message.substr(0, message.length - 2) + " sont manquante(s) ou erroné(s)";
+        sendReturn(res, 403, message);
+    } else return true;
+};
+
+app.listen(port, () => console.log(`Run api listening on localhost:3000 !`));
