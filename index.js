@@ -56,34 +56,6 @@ app.get("/", (req, res) => {
     res.send("<h1>Hello Mike!</h1>");
 });
 
-app.post("/login", (req, res) => {
-    const data = req.body;
-    connect.query(
-        "SELECT * FROM users WHERE email = ?", [data.email],
-        (error, results) => {
-            if (error) sendReturn(res);
-            else if (results.length == 0)
-                sendReturn(res, 418, {
-                    error: true,
-                    message: "Password/Email doesn't exist"
-                });
-            else {
-                //bcrypt.compare(data.password, results[0].password, (isOK) =>{})
-                // Comparaison du password via le hash de la BDD
-                bcrypt.compare(data.password, results[0].password).then(isOk => {
-                    if (isOk) getUsers(res, "where idusers = " + results[0].idusers);
-                    else {
-                        sendReturn(res, 418, {
-                            error: true,
-                            message: "Password/Email doesn't exist"
-                        });
-                    }
-                });
-            }
-        }
-    );
-});
-
 app.post("/register", (req, res) => {
     const data = req.body;
 
