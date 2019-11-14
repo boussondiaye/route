@@ -6,7 +6,7 @@ const express = require("express"), // Express - System route pour REST API
     port = 3000, // Port de connection
     connect = mysql.createConnection({
         host: "localhost",
-        user: "roott",
+        user: "root",
         password: "",
         database: "projet_api"
     });
@@ -57,9 +57,7 @@ app.use("/register", (req, res, next) => {
  * function(req, res) {res.send("Hello World!")}
  */
 
-app.get("/", (req, res) => {
-    res.send("<h1>Hello Mike!</h1>");
-});
+
 
 app.post("/login", (req, res) => {
     const data = req.body;
