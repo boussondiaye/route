@@ -1,0 +1,29 @@
+const express = require("express"), // Express - System route pour REST API
+    /*   mysql = require("mysql"), // Package de connection BDD MySqli
+        bodyParser = require("body-parser"), // Middleware pour la data das le body
+        bcrypt = require("bcryptjs"), // Une bibliothèque pour vous aider à hacher les mots de passe
+    */
+    app = express(), // Création d'un application REST
+    /*   connect = mysql.createConnection({
+        host: "localhost",
+        user: "root",
+        password: "",
+        database: "projet_api"
+    });
+*/
+    port = 3000 // Port de connection
+    // Connect to BDD
+    /*connect.connect(err => {
+        if (err) console.error("Error connecting MySQL: " + err.stack);
+    });
+
+    // parse application/x-www-form-urlencoded
+    app.use(
+        bodyParser.urlencoded({
+            extended: false
+        })
+    );
+    */
+app.get("/", (req, res) => {
+    req.rander('index.ejs')
+});
